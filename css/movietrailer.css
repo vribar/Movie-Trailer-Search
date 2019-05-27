@@ -1,0 +1,189 @@
+body {
+	margin: 0;
+	font-family: 'Proxima Nova Soft', 'Helvetica Neue', sans-serif;
+}
+#header {
+	position: fixed;
+	height: 30px;
+	width: 100%;
+	text-align: center;
+	background-color: #ccc;
+}
+#apilink {
+	right: 13px;
+	position: absolute;
+}
+#search {
+	position: absolute;
+	top: 30px;
+	height: 45px;
+	left: 5vw;
+	padding: 4px 0;
+}
+#searchTxt {
+	font-size: 1.4rem;
+	width: 80vw;
+	max-width: 600px;
+}
+#results {
+	position: absolute;
+	top: 75px;
+	bottom: 30px;
+	width: 100%;
+	overflow: auto;
+}
+#footer {
+	position: fixed;
+	bottom: 0px;
+	height: 30px;
+	width: 100vw;
+	background-color: #ccc	;
+}
+span.small {
+	font-size: 0.6rem;
+}
+.button:active {
+	border: 1px inset #ccc;
+}
+.button {
+	display: inline-block;
+	border: 1px outset #ccc;
+	background-color: #ccc;
+	padding: 6px;
+	cursor: pointer;
+}
+input.error::placeholder {
+	color: #f00;
+}
+.movie {
+	width: 90vw;
+	margin: 2vh 5vw;
+	border: 1px solid green;
+	padding: 3px;
+	display: grid;
+	grid-template-areas: 
+		'title title releaseDate'
+		'image overview likes'
+		'image trailer  trailer';
+	grid-template-columns: 1fr 3fr 1fr;
+	grid-column-gap: 10px;
+}
+#movies .title:before {
+	content: "🎥";
+}
+#movies .title {
+	grid-area : title;
+	font-weight: bold;
+}
+#movies .releaseDate:before {
+	content: "📅";
+}
+#movies .releaseDate {
+	grid-area : releaseDate;
+}
+#movies .image {
+	grid-area: image;
+}
+#movies .overview {
+	grid-area: overview;
+	font-size: 0.8rem;
+	color: #666;
+}
+#movies .trailers:before {
+	content: "trailers:";
+	position: absolute;
+	color: #333;
+	z-index: 1;
+	top: -10px;
+	font-style: italic;
+	color: #666;
+}
+#movies .trailers {
+	grid-area: trailer;
+	position: relative;
+}
+#movies .likes {
+	grid-area: likes;
+}
+#message {
+	right: 10px;
+	bottom: 3px;
+	position: absolute;
+}
+.trailers > div {
+	display: inline-block;
+}
+.trailer {
+	padding: 5px;
+	box-shadow: 2px 2px 2px grey;
+	margin: 5px;
+	position: relative;
+}
+.trailer:not(.error):hover:after {
+	content: "▶";
+	position: absolute;
+	font-size: 2rem;
+	left: calc(50% - 1.5rem);
+	top: 28%;
+	color: white;
+	background-color: red;
+	width: 3rem;
+	text-align: center;
+	border-radius: 9%;
+	opacity: 0.8;
+}
+.trailer:not(.error):hover:active:after {
+	transform: translate(1px,1px);
+}
+.trailer.error {
+	width: 50%;
+	color: #f00;
+	font-size: 0.8rem;
+	word-break: break-word;
+}
+.trailer.error:before {
+    content: "Error:";
+    color: #333;
+    font-style: italic;
+    font-weight: bold;
+}
+#more {
+	width: 100%;
+	text-align: center;
+}
+#moreBtn {
+	padding-bottom: 15px;
+}
+#footer > div {
+	display: inline-block;
+}
+#overlay {
+	position: fixed;
+	background-color: rgba(128,128,128,0.5);
+	width: 100vw;
+	height: 100vh;
+	overflow: hidden;
+	z-index: 1;
+}
+#videoPlayer {
+	position: absolute;
+	top: calc(50vh - 220px);
+	left: calc(50vw - 360px);
+	background: white;
+	box-shadow: 3px 3px 9px 3px #333;
+}
+#videoPlayer .buttonBar {
+	margin: 0 12px;
+	width: 100px;
+	display: flex;
+}
+.buttonBar > * {
+	margin: 13px 5px;
+	font-size: 24px;
+	text-align: center;
+}
+#closePlayer {
+	right: 10px;
+	bottom: 1px;
+	position: absolute;
+}
