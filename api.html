@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<!--
+	copyright	2019 Vribar BV. All rights reserved
+	author		Henk
+
+	description of the getMovies.php and getTMDBConfig.php API's
+	  
+-->
+<head>
+	<title>Vribar ~ Movietrailer</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<style>
+		body {
+		    margin: 0;
+		    font-family: 'Open Sans', sans-serif;
+		    font-size: 14px;
+		    color: #666;
+		}
+		#text {
+				margin: 20vmin;
+				padding: 20vmin;
+				box-shadow: 1px 3px 11px 3px #333;
+		}
+		td, th {
+		    border: 1px solid;
+		    text-align: left;
+		    padding: 10px;
+		}
+
+		table {
+		    border-collapse: collapse;
+		    margin: 30px;
+		    width: 60vw;
+			box-shadow: 2px 2px 5px #ccc;
+		}
+
+		td.indent1 {
+		    text-indent: 1rem;
+		}
+		.button {
+			font-size: 1.1rem;
+			border: none;
+			/* margin: 2px; */
+			padding: 3px 16px;
+			color: #FFFFFF;
+			background-color: #4CAF50;
+			font-weight: bold;
+		}	
+		.button:hover {
+			box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2), 0 6px 20px 0 rgba(0,0,0,0.19);
+		}
+		.button:active {
+			transform:  translate(2px, 2px);
+		}
+		.button:focus {
+			outline: none;
+		}
+		td.indent2 {
+		    text-indent: 2rem;
+		}
+
+		p {
+		    left: 2rem;
+		    position: relative;
+		    width: calc(100% - 2rem);
+		}
+		.result {
+ 		   font-family: monospace;
+		}
+		.code {
+			font-family: courier new;
+			font-weight: bold;
+			font-size: 0.8rem;
+		    word-break: break-all;
+		}
+		.response {
+		    font-weight: bold;
+		    font-style: italic;
+		}
+	@media screen and (max-width: 800px) {
+		#text {
+			margin: 0;
+			box-shadow: none;
+			padding: 5vmin;
+		}
+		table {
+		    width: 80vw;
+		}
+	}
+</style>
+<script>
+	$(document).ready(function() {
+		function mkQstring() {
+			var parms = [];
+			$("#tryItMovie").find('input.parm').each(function() {
+				if ($(this).val() != "") {
+					parms.push($(this).attr('id')+"="+encodeURIComponent($(this).val()));
+				}
+			});
+			return baseUrl + "/php/getMovies.php" + (parms.length == 0 ? "" : "?" + parms.join('&'));
+		}
+		var getUrl = window.location;
+		var baseUrl = getUrl.origin + "/" + getUrl.pathname.split('/')[1];
+		$('#configString').html(baseUrl + "/getTMDBConfig.php");
+		$('#movieString').html(mkQstring());
+		$('#tryConfig').click(function() {
+			var d1 = new Date();
+			$.ajax({
+				url: "php/getTMDBConfig.php",
+				type: "GET"
+			}).promise().done(function(data) {
+				$("#configResult").html(data);
+				$("#configTime").html("(elapsed: "+(new Date() - d1)+" msecs)");
+			});
+		});
+		$('#tryMovie').click(function() {
+			var d1 = new Date();
+			$.get( mkQstring(), function(data) {
+				$('#moviesResult').html(data);
+				$("#movieTime").html("(elapsed: "+(new Date() - d1)+" msecs)");
+			});
+		});
+		$('#tryItMovie input').on('keyup',function(e) {
+
+			$('#movieString').html(mkQstring());
+		});
+	})
+</script>
+</head>
+<body>
+	<div id=text>		
+		<h1>Vribar's Movietrailer API</h1>
+		<h2>Introduction</h2>
+		<p>
+			This API retrieves movietrailers from &quot;<a href="https://developers.themoviedb.org" target=_blank>The Movie DataBase</a>&quot; and &quot;<a href="https://youtube.com" target=_blank>Youtube</a>&quot; and is written as part of an assignment from <a href="https://info.ogd.nl/" target=_blank>O.G.D.</a>
+		</p>
+		<p>
+			The API uses the API's from the above mentioned websites. Documentation for those API's can be found on their respective websites. Limitations and terms of use of those API's also apply to this API.
+		</p>
+		<h2>Usage</h2>
+		<p>
+			To get a JSON object with movie-info and trailers you must supply a searchtext and the number of movies you want to retrieve. If you want to get the trailers, you have to supply the number of trailers (max 25) as well.
+		</p><p>
+			If you want to use the poster-images, you have to retrieve the base-url for the images
+		</p>
+		<table>
+			<tr class=title>
+				<th colspan=5>Query String</th>
+			</tr><tr>
+				<td class=code colspan=5>https://www.vribar.nl/movietrailer/getTMDBConfig.php</td>
+			</tr><tr class=title>
+				<th colspan=5>Response</th>
+			</tr><tr>
+				<td colspan=5>The API returs an String with the base URL for the poster-images</td>
+			</tr>
+		</table>
+		<h2>Try it</h2>
+		<table>
+			<tr>
+				<th>Query string</th>
+			</tr><tr>
+				<td class=code id=configString>&nbsp;</td>
+			</tr><tr>
+				<td><button class=button id=tryConfig class=try>Try</button></td>
+			</tr>
+			<tr>
+				<th>Result <span class=time id=configTime></span></th>
+			</tr><tr>
+				<td class=code id=configResult>&nbsp;</td>
+			</tr>
+		</table>
+		<table>
+			<tr class=title>
+				<th colspan=5>Query String</th>
+			</tr><tr>
+				<td class=code colspan=5>https://www.vribar.nl/movietrailer/getMovies.php</td>
+			</tr><tr class=header>
+				<th>parameter</th><th>type</th><th>description</th><th>required</th><th>default</th>
+			</tr><tr>
+				<td>searchtxt</td><td>String</td><td>The (URI-encoded) search string for movies</td><td>Yes</td><td></td>
+			</tr><tr>
+				<td>firstrec</td><td>Integer</td><td>The index of the first movie-record (starts with 0)</td><td>No</td><td>0</td>
+			</tr><tr>
+				<td>count</td><td>Integer</td><td>The number of movies you want</td><td>No</td><td>20</td>
+			</tr><tr>
+				<td>trailers</td><td>Integer</td><td>The number of trailers per movies you want</td><td>No</td><td>0</td>
+			</tr><tr>
+				<td>cache</td><td>Boolean</td><td>Use cache (if available)</td><td>No</td><td>True</td>
+			</tr><tr class=title>
+				<th colspan=5>Response</th>
+			</tr><tr class=header>
+				<th>name</th><th>type</th><th colspan=3>description</th>
+			</tr><tr>
+				<td colspan=5 class=response>if Movie search was successfull</td>
+			</tr><tr>
+				<td>success</td><td>Boolean</td><td colspan=3>if the query was successful (True)</td>
+			</tr><tr>
+				<td>totalResults</td><td>Integer</td><td colspan=3>total number of movies you can get with this search string</td>
+			</tr><tr>
+				<td>tmdbQueries</td><td>Integer</td><td colspan=3>The number of times this API had to call the TMDB-API to get the required results (if 0, all movies where found in cache)</td>
+			</tr><tr>
+				<td>ytQueries</td><td>Boolean</td><td colspan=3>The number of times this API had to call the Youtube-API to get the required results (if 0, all trailers where found in cache)</td>
+			</tr><tr>
+				<td>movies</td><td>Array</td><td colspan=3>An array of objects with the requested movies, containing:</td>
+			</tr><tr>
+				<td class=indent1>tmdbId</td><td>Integer</td><td colspan=3>The unique ID of the movie from TMDB</td>
+			</tr><tr>
+				<td class=indent1>title</td><td>String</td><td colspan=3>The movie title</td>
+			</tr><tr>
+				<td class=indent1>overview</td><td>String</td><td colspan=3>A short overview of the movie</td>
+			</tr><tr>
+				<td class=indent1>releaseDate</td><td>String</td><td colspan=3>The Release date of the movie (YYYY-MM-DD)</td>
+			</tr><tr>
+				<td class=indent1>image</td><td>String</td><td colspan=3>Concatenate the image-base-path with this to get an url to the poster image of the movie</td>
+			</tr><tr>
+				<td class=indent1>trailers</td><td>Array</td><td colspan=3>An array of objects with the requested trailers, containing:</td>
+			</tr><tr>
+				<td colspan=5 class='response indent2'>if Trailer search was succesfull</td>
+			</tr><tr>
+				<td class=indent2>success</td><td>Boolean</td><td colspan=3>If the trailers where found (True)</td>
+			</tr><tr>
+				<td class=indent2>videoId</td><td>Integer</td><td colspan=3>The Youtube video ID</td>
+			</tr><tr>
+				<td class=indent2>title</td><td>String</td><td colspan=3>The Youtube video title</td>
+			</tr><tr>
+				<td class=indent2>image</td><td>Url</td><td colspan=3>The complete URL of a still image of te video</td>
+			</tr><tr>
+				<td colspan=5 class='response indent2'>if Trailer search was <u>NOT</u> succesfull</td>
+			</tr><tr>
+				<td class=indent2>success</td><td>Boolean</td><td colspan=3>if the query was successful (False)</td>
+			</tr><tr>
+				<td class=indent2>status_code</td><td>Integer</td><td colspan=3>status code</td>
+			</tr><tr>
+				<td class=indent2>message</td><td>String</td><td colspan=3>The failure reason</td>
+			</tr><tr>
+				<td colspan=5 class='response'>if Movie search was <u>NOT</u> successfull</td>
+			</tr><tr>
+				<td>success</td><td>Boolean</td><td colspan=3>if the query was successful (False)</td>
+			</tr><tr>
+				<td>status_code</td><td>Integer</td><td colspan=3>status code</td>
+			</tr><tr>
+				<td>message</td><td>String</td><td colspan=3>The failure reason</td>
+			</tr>
+		</table>
+		<h2>Try it</h2>
+		<table id=tryItMovie>
+			<tr>
+				<th colspan=2>Query string</th>
+			</tr><tr>
+				<td class=code colspan=2 id=movieString></td>
+			</tr><tr>
+				<td>searchtxt</td><td><input class=parm id=searchtxt></td>
+			</tr><tr>
+				<td>firstrec</td><td><input class=parm id=firstrec value="0"></td>
+			</tr><tr>
+				<td>count</td><td><input class=parm id=count value="20"></td>
+			</tr><tr>
+				<td>trailers</td><td><input class=parm id=trailers></td>
+			</tr><tr>
+				<td>cache</td><td><input class=parm id=cache value="true"></td>
+			</tr><tr>
+				<td colspan=2><button class=button class=try id=tryMovie>Try</button></td>
+			</tr>
+			<tr>
+				<th colspan="2">Result <span class=time id=movieTime></span></th>
+			</tr><tr>
+				<td colspan="2" class=result id=moviesResult>&nbsp;</td>
+			</tr>
+		</table>
+	</div>
+</body>
+</html>
+
+
+

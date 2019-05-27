@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html>
+<!--
+	copyright	2019 Vribar BV. All rights reserved
+	author		Henk
+
+	this website uses the getMovies.php API to show movies with their matching trailers.
+
+	Trailes can be shared/liked on. Facebook, Twitter and/or LinkedIn
+  
+	  
+-->
+	<head>
+		<title>Movie Trailer Search</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+		<!-- script nneeded for youtube -->
+		<script src="https://apis.google.com/js/api.js"></script>
+
+		<!-- facebook likes -->
+		<div id="fb-root"></div>
+		<script async defer crossorigin="anonymous" src="https://connect.facebook.net/nl_NL/sdk.js#xfbml=1&version=v3.3&appId=2314232285563208&autoLogAppEvents=1"></script>
+
+		<!-- twitter tweets -->
+		<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+		<!-- button images -->
+		<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+		<link href="css/movietrailer.css" rel="stylesheet">
+
+		<style></style>
+	</head>
+	<script>
+		const RECS_PER_PAGE = 4;	// 4 movies per page
+		var imagerUrl;				// holds the first part of thhe poster-images from TMDb
+		var currentPage = 1;		// the last set of RECS_PER_PAGE retrieved
+		var queryStartTime;			// for performance tuning
+
+
+		function json_parse(what) {
+		/**
+		  *	 function json_parse tries to parse a string and sends the data to the console if the
+		  *	 string isn;t JSON 
+		  *
+		  *  @param string what the string to be parsed
+		  *
+		  *  @return mixed the de-jsonified string
+		  */
+			try {
+				return JSON.parse(what);
+			} catch(error) {
+				console.log(what);
+				return error;
+			}
+		}
+
+		function message(msg) {
+		/**
+		  *	 function message puts the message in the footer
+		  *	 string isn't JSON 
+		  *
+		  *  @param string msg the text to be displayed
+		  */
+			$("#message span").html(msg);
+		}
+
+		function formatDate(d) {
+		/**
+		  *	 function formatDate sets the YYYY-MM-DD date to DD-MM-YYYY
+		  *
+		  *  @param string d the date in YYYY-MM-DD format
+		  *
+		  *  @return string the formatted date
+		  */
+			return (d.substr(8,2)+"-"+d.substr(5,2)+"-"+d.substr(0,4));
+		}
+
+
+		// getting the poster base url from the getTMDBConfig.php API
+		// put this in a promise so that we can prevent building stuff without this base url
+		var readConfig = $.ajax({
+			url: "php/getTMDBConfig.php",
+			type: "GET"
+		}).promise();
+
+		$.when(readConfig).done(function(data) {
+			imageUrl = data;
+		});
+
+		// create a promise for the document to be fully loaded
+		var docReady = $(document).ready(function() {
+			$("#overlay").hide();
+			$("#moreBtn").hide();
+		}).promise();
+
+		// When both the imageUrl and the document are loaded, start doing stuff
+		$.when(readConfig, docReady).done(function(data) {
+			function readData(searchTxt, page, callBack) {
+			/**
+			  *	 function readData uses the getMovies.php API to get the movies and the trailers
+			  *
+			  *  @param string searchTxt the searchcriterium
+			  *
+			  *  @param int page the page number of the page to show
+			  *
+			  *  @param function callback the function to be executed when de data is read
+			  */
+
+				let firstRec = ((page-1) * RECS_PER_PAGE);
+
+				var getMovies = $.ajax({
+					url: "php/getMovies.php",
+					data: {
+						searchtxt: encodeURIComponent($("#searchTxt").val()),
+						firstrec: firstRec,
+						count: RECS_PER_PAGE,
+						trailers: 5,
+						cache: $("#cacheOptions").val() == "cache"
+					},
+					type: "GET"
+				}).promise().done(function(data) {
+					var movies = json_parse(data);
+					callBack(movies);
+				});
+
+			}
+
+			function appendMovies(movies) {
+			/**
+			  *	 function appendMovies appends the movies to #movies
+			  *
+			  *  @param array movies an array with movie-objects
+			  *
+			  */
+				for (var i = 0; i < movies.movies.length; i++) {
+					let movie = movies.movies[i];
+					let $movie = $("<div class=movie data-tmdbid='"+movie.tmdbId+"'></div>");
+					// create a DOM element with movie info
+					$movie.append($("<div class=title>"+movie.title+"</div>"));
+					$movie.append($("<div class=releaseDate>"+formatDate(movie.releaseDate)+"</div>"));
+					$movie.append($("<div class=overview>"+movie.overview+"</div>"));
+					if (movie.image != null) {
+						$movie.append("<div class=image><img src='" + imageUrl + movie.image +"'></div>");
+					} else {
+						$movie.append("<div class=image></div>");
+					}
+
+					let trailerData = movie.trailers;
+					let $trailers = $("<div class=trailers></div>");
+
+					// make DOM element with trailer data
+					if (trailerData !== null) {
+						for (var j = 0; j < trailerData.length; j++) {
+							let trailer = trailerData[j];
+
+							if (trailer.success) {	
+								$trailers.append("<div class=trailer data-videoId='"+trailer.videoId+"'><img src='"+trailer.image+"'></div>");
+							} else {
+								$trailers.append("<div class='trailer error'><div>"+trailer.message+"</div></div>");
+							}
+						}
+						// append the trailers to the movie
+						$trailers.appendTo($movie);
+					}
+					// and finally: put the movie in the DOM.
+					$movie.appendTo($("#movies"));
+
+				}
+				// calculate elepsed time
+				let time = new Date().valueOf() - queryStartTime.valueOf();
+				message("# TMDB queries:" + movies.tmdbQueries + ", Youtube queries:" + movies.ytQueries +" in "+time+" millisecs.");
+
+				// if there is more to get, show the 'more'-button
+ 				if ($("#movies div.movie").length < movies.totalResults) {
+					$("#moreBtn").show();
+				} else {
+					$("#moreBtn").hide();
+				}
+			}
+
+			// event listener for click on the searchbutton
+			$("#searchBtn").click(function() {
+				// give error when no searchhtext is given
+				if ($("#searchTxt").val() == "") {
+					$("#searchTxt").addClass("error").attr("placeholder","Please enter search text").focus();
+					return;
+				}
+				// start the timer and read first page
+				queryStartTime = new Date();
+				currentPage = 1;
+				var result = readData(encodeURIComponent($("#searchTxt").val()),currentPage, function(result) {
+					$('#movies').empty(); // first clean the page
+					appendMovies(result);
+				});
+
+			});
+
+			// event listener for click on the morebutton
+			$("#moreBtn").click(function() {
+				// start the timer and read next page
+				queryStartTime = new Date();
+				currentPage++;
+				var result = readData(encodeURIComponent($("#searchTxt").val()),currentPage, function(result) {
+					appendMovies(result);
+				});
+
+			});
+
+			// remove the error class when we do something with the search
+			$("#searchTxt").keydown(function(e) {
+				$(this).removeClass("error").attr("placeholder","Enter search text").focus();
+				if (e.key == "Enter") {
+					e.preventDefault();
+					$("#searchBtn").trigger("click");
+				}
+			});
+
+			// if we click on a trailer, built and open the #videoPlayer
+			$("#movies").on('click','div.trailer',function() {
+				$('#ytplayer').attr('src',"https://www.youtube.com/embed/"+$(this).attr("data-videoId")+"?enablejsapi=1");
+				let link = 'https://youtu.be/'+$(this).attr("data-videoId");
+				$('#videoPlayer div.fb-like').attr('href',link);
+
+
+  				let tweet = "I found the trailer for "+$(this).parents('div.movie').find('div.title').html()+":"+link;
+				$("#videoPlayer .twitter-share-button").attr("data-text",tweet).attr("data-url",link);
+				$("#linkedInBtn").html("<script src='https://platform.linkedin.com/in.js' type='text/javascript'><"+"/script><script type='IN/Share' data-url='"+link+"'><"+"/script>");
+
+				twttr.widgets.createShareButton( '/',
+					document.getElementById('twitterBtn'),{
+						text: tweet,
+						size:"large",
+						url:link
+					}
+				);
+
+
+				$('#overlay').show(1000);
+			});
+
+			// stop the videoplayer and tidy up when we close the trailer-window
+			$("#closePlayer").click(function() {
+				$('#ytplayer')[0].contentWindow.postMessage('{"event":"command","func":"' + 'stopVideo' + '","args":""}', '*');
+				$("#videoPlayer .twitter-share-button").remove();
+				$('#overlay').hide(1000);
+
+			});
+
+			// start with focus on #searchTxt
+			$("#searchTxt").focus();
+		});
+	</script>
+	<body>
+		<div id="header">
+			🎥 Movie Trailer Search
+			<span id=apilink><a href=api.html target=_blank>API Description</a></span>
+		</div>
+		<div id="search">
+			<input id="searchTxt" placeholder="Enter search text" />
+			<div class="button" id="searchBtn"><i class="material-icons">search</i></div>
+			<select id=cacheOptions>
+				<option selected value="cache">Try cache first</option>
+				<option value="db">Read from TMDB</option>
+			</select>
+		</div>
+		<div id="results">
+			<div id="movies"></div>
+			<div id=more>
+				<div class="button wide" id="moreBtn">Show more...</div>
+			</div>
+		</div>
+		<div id="footer">
+			<div class="disclaimer">
+				<img src="https://www.themoviedb.org/assets/2/v4/logos/primary-green-d70eebe18a5eb5b166d5c1ef0796715b8d1a2cbc698f96d311d62f894ae87085.svg" alt="The Movie Database (TMDb)" width="27" height="24">
+				<span class="small left">This product uses the TMDb API but is not endorsed or certified by TMDb.</span>
+			</div>
+			<div id="message">
+				<span class="small"></span>
+			</div>
+		</div>
+		<div id=overlay>
+			<div id=videoPlayer>
+					
+				<iframe id="ytplayer" type="text/html" width="720" height="405"
+					src=""
+					frameborder="0" allowfullscreen>
+				</iframe>
+				<div class=buttonBar>
+					<div id=closePlayer class='button'><i class="material-icons">close</i></div>
+					<div class="fb-like" data-href="https://youtu.be/" data-width="200" data-layout="box_count" data-action="like" data-size="small" data-show-faces="true" data-share="false"></div>
+					<div id=twitterBtn></div>
+					<div id=linkedInBtn></div>
+				</div>
+		
+			</div>
+		</div>
+	</body>
+</html>
